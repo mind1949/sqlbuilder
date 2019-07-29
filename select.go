@@ -7,8 +7,9 @@ import (
 )
 
 type selectData struct {
-	Columns []Sqlizer
-	From    Sqlizer
+	Columns    []Sqlizer
+	From       Sqlizer
+	WhereParts []Sqlizer
 }
 
 func (d *selectData) ToSql() (sqlStr string, args []interface{}, err error) {
@@ -19,6 +20,10 @@ func (d *selectData) ToSql() (sqlStr string, args []interface{}, err error) {
 
 	// sqlStr, err = d.PlaceholderFormat.ReplacePlaceholder(sqlStr)
 	return
+}
+
+func (d *selectData) toSqlRaw() (sqlStr string, args []interface{}, err error) {
+	return d.toSql()
 }
 
 func (d *selectData) toSql() (sqlStr string, args []interface{}, err error) {
@@ -41,6 +46,14 @@ func (d *selectData) toSql() (sqlStr string, args []interface{}, err error) {
 	if d.From != nil {
 		sql.WriteString(" FROM ")
 		args, err = appendToSql([]Sqlizer{d.From}, sql, "", args)
+		if err != nil {
+			return
+		}
+	}
+
+	if len(d.WhereParts) > 0 {
+		sql.WriteString(" WHERE ")
+		args, err = appendToSql(d.WhereParts, sql, " AND ", args)
 		if err != nil {
 			return
 		}
@@ -71,4 +84,11 @@ func (b SelectBuilder) Columns(columns ...string) SelectBuilder {
 
 func (b SelectBuilder) From(from string) SelectBuilder {
 	return builder.Set(b, "From", newPart(from)).(SelectBuilder)
+}
+
+func (b SelectBuilder) Where(pred interface{}, args ...interface{}) SelectBuilder {
+	if pred == nil || pred == "" {
+		return b
+	}
+	return builder.Append(b, "WhereParts", newWherePart(pred, args...)).(SelectBuilder)
 }
