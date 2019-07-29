@@ -8,6 +8,7 @@ import (
 
 type selectData struct {
 	Columns []Sqlizer
+	From    Sqlizer
 }
 
 func (d *selectData) ToSql() (sqlStr string, args []interface{}, err error) {
@@ -37,6 +38,14 @@ func (d *selectData) toSql() (sqlStr string, args []interface{}, err error) {
 		}
 	}
 
+	if d.From != nil {
+		sql.WriteString(" FROM ")
+		args, err = appendToSql([]Sqlizer{d.From}, sql, "", args)
+		if err != nil {
+			return
+		}
+	}
+
 	sqlStr = sql.String()
 	return
 }
@@ -58,4 +67,8 @@ func (b SelectBuilder) Columns(columns ...string) SelectBuilder {
 		parts = append(parts, newPart(str))
 	}
 	return builder.Extend(b, "Columns", parts).(SelectBuilder)
+}
+
+func (b SelectBuilder) From(from string) SelectBuilder {
+	return builder.Set(b, "From", newPart(from)).(SelectBuilder)
 }
