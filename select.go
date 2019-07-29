@@ -7,9 +7,10 @@ import (
 )
 
 type selectData struct {
-	Columns    []Sqlizer
-	From       Sqlizer
-	WhereParts []Sqlizer
+	PlaceholderFormat PlaceholderFormat
+	Columns           []Sqlizer
+	From              Sqlizer
+	WhereParts        []Sqlizer
 }
 
 func (d *selectData) ToSql() (sqlStr string, args []interface{}, err error) {
@@ -18,7 +19,7 @@ func (d *selectData) ToSql() (sqlStr string, args []interface{}, err error) {
 		return
 	}
 
-	// sqlStr, err = d.PlaceholderFormat.ReplacePlaceholder(sqlStr)
+	sqlStr, err = d.PlaceholderFormat.ReplacePlaceholders(sqlStr)
 	return
 }
 
@@ -72,6 +73,10 @@ func init() {
 func (b SelectBuilder) ToSql() (string, []interface{}, error) {
 	data := builder.GetStruct(b).(selectData)
 	return data.ToSql()
+}
+
+func (b SelectBuilder) PlaceholderFormat(f PlaceholderFormat) SelectBuilder {
+	return builder.Set(b, "PlaceholderFormat", f).(SelectBuilder)
 }
 
 func (b SelectBuilder) Columns(columns ...string) SelectBuilder {
